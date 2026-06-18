@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>URL Shortener</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background: #0a0a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated gradient orbs */
+    body::before {
+      content: '';
+      position: fixed;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+      top: -150px; left: -150px;
+      border-radius: 50%;
+      animation: drift1 8s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(236,72,153,0.2) 0%, transparent 70%);
+      bottom: -100px; right: -100px;
+      border-radius: 50%;
+      animation: drift2 10s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(60px, 40px) scale(1.15); } }
+    @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-50px, -30px) scale(1.2); } }
+
+    .card {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px;
+      padding: 3rem 2.5rem 2.5rem;
+      width: 100%;
+      max-width: 540px;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    /* Top pill accent */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(236,72,153,0.2));
+      border: 1px solid rgba(99,102,241,0.4);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #a5b4fc;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+    .pill-dot {
+      width: 6px; height: 6px;
+      background: #818cf8;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 50%, #f9a8d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 2rem;
+      font-weight: 400;
+    }
+
+    /* Input row */
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    #url {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 0 1.1rem;
+      height: 52px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    #url::placeholder { color: rgba(255,255,255,0.3); }
+    #url:focus {
+      border-color: rgba(99,102,241,0.7);
+      background: rgba(99,102,241,0.08);
+      box-shadow: 0 0 0 4px rgba(99,102,241,0.15);
+    }
+
+    button {
+      height: 52px;
+      padding: 0 1.5rem;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+      border: none;
+      border-radius: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.45);
+    }
+    button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      border-radius: inherit;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(99,102,241,0.6);
+    }
+    button:active { transform: translateY(0) scale(0.98); }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.07);
+    }
+    .divider-text {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Result box */
+    #result {
+      min-height: 56px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 0 1.1rem;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.3);
+      word-break: break-all;
+      transition: border-color 0.3s, background 0.3s;
+    }
+    #result.has-result {
+      border-color: rgba(99,102,241,0.4);
+      background: rgba(99,102,241,0.07);
+      color: #a5b4fc;
+    }
+    #result a {
+      color: #a5b4fc;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    #result a:hover { color: #c7d2fe; text-decoration: underline; }
+
+    /* Stats row */
+    .stats {
+      display: flex;
+      gap: 8px;
+      margin-top: 1.5rem;
+    }
+    .stat {
+      flex: 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8, #f9a8d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      font-weight: 500;
+      margin-top: 2px;
+      display: block;
+    }
+
+    /* Copy notification */
+    .copy-toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 100px;
+      box-shadow: 0 8px 24px rgba(99,102,241,0.5);
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+      z-index: 999;
+      pointer-events: none;
+    }
+    .copy-toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 480px) {
+      .card { padding: 2rem 1.5rem; }
+      .input-row { flex-direction: column; }
+      button { width: 100%; }
+      h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="pill">
+      <span class="pill-dot"></span>
+      Link Magic
+    </div>
+
+    <h1>URL Shortener</h1>
+    <p class="subtitle">Paste a long URL, get a clean shareable link instantly.</p>
+
+    <div class="input-row">
+      <input id="url" placeholder="https://your-very-long-url.com/goes/here" type="url">
+      <button onclick="shorten()">Shorten ✦</button>
+    </div>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-text">Your short link</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <p id="result">Your shortened link will appear here&nbsp;✦</p>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-num" id="count">0</span>
+        <span class="stat-label">Links created</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">⚡</span>
+        <span class="stat-label">Instant</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">🔒</span>
+        <span class="stat-label">Secure</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="copy-toast" id="toast">✓ Copied to clipboard!</div>
+
+  <script>
+    let linkCount = 0;
+
+    async function shorten() {
+      const originalUrl = document.getElementById("url").value;
+
+      if (!originalUrl.trim()) {
+        shake();
+        return;
+      }
+
+      const btn = document.querySelector("button");
+      btn.textContent = "Working…";
+      btn.style.opacity = "0.7";
+
+      const response = await fetch("/shorten", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ originalUrl })
+      });
+
+      const data = await response.json();
+      const resultEl = document.getElementById("result");
+
+      resultEl.classList.add("has-result");
+      resultEl.innerHTML = `<a href="${data.shortUrl}" onclick="copyLink(event, '${data.shortUrl}')">${data.shortUrl}</a>&nbsp;&nbsp;<span style="font-size:11px; color:rgba(255,255,255,0.3); cursor:pointer;" onclick="copyLink(event, '${data.shortUrl}')">click to copy</span>`;
+
+      linkCount++;
+      document.getElementById("count").textContent = linkCount;
+
+      btn.textContent = "Shorten ✦";
+      btn.style.opacity = "1";
+    }
+
+    function copyLink(e, url) {
+      e.preventDefault();
+      navigator.clipboard?.writeText(url).then(() => {
+        const toast = document.getElementById("toast");
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 2200);
+      });
+    }
+
+    function shake() {
+      const input = document.getElementById("url");
+      input.style.animation = "none";
+      input.style.borderColor = "rgba(236,72,153,0.7)";
+      input.style.boxShadow = "0 0 0 4px rgba(236,72,153,0.15)";
+      setTimeout(() => {
+        input.style.borderColor = "";
+        input.style.boxShadow = "";
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
